@@ -1,3 +1,5 @@
+language: c
+
 install: make download
 
 compiler: gcc
