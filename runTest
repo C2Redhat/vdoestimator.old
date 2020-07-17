@@ -1,0 +1,52 @@
+#!/bin/bash
+
+minDedup=85
+function cleanUp {
+ rm -rf testDir test.index
+}
+
+function runVDOEstimator {
+  sync
+  ./vdoestimator --index test.index ./testDir
+}
+
+cleanUp
+mkdir testDir
+dd if=/dev/zero ibs=4k count=22 > testDir/data 2>/dev/null
+depupPercent=`runVDOEstimator | grep 'Dedupe Percentage' | awk '{print $3}' | sed 's/%//'`
+depupPercent=${depupPercent/\.*}
+if [ $depupPercent -lt $minDedup ]; then
+  echo Dedup too low: $depupPercent
+  exit 1  
+else
+  echo succeed: $depupPercent
+fi
+
+cleanUp
+mkdir testDir
+dd if=/dev/zero ibs=4k count=22 2>/dev/null | tr "\000" "\377" > testDir/data 
+depupPercent=`runVDOEstimator | grep 'Dedupe Percentage' | awk '{print $3}' | sed 's/%//'`
+depupPercent=${depupPercent/\.*}
+if [ $depupPercent -lt $minDedup ]; then
+  echo Dedup too low: $depupPercent
+  exit 1  
+else
+  echo succeed: $depupPercent
+fi
+
+cleanUp
+mkdir testDir
+dd if=/dev/zero ibs=4k count=11 >  testDir/data 2>/dev/null
+dd if=/dev/zero ibs=4k count=11 2>/dev/null | tr "\000" "\377" >> testDir/data 2>/dev/null
+depupPercent=`runVDOEstimator | grep 'Dedupe Percentage' | awk '{print $3}' | sed 's/%//'`
+depupPercent=${depupPercent/\.*}
+if [ $depupPercent -lt $minDedup ]; then
+  echo Dedup too low: $depupPercent
+  exit 1  
+else
+  echo succeed: $depupPercent
+fi
+
+cleanUp
+exit 0
+
